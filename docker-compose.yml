@@ -1,0 +1,114 @@
+version: "3"
+services:
+  mongo_router:
+    image: mongo:latest
+    container_name: mongo_router
+    hostname: mongo_router
+    command: mongos --port 27017 --configdb rs-config-server/mongo_config_server1:27017,mongo_config_server2:27017 --bind_ip_all  --keyFile /data/keyfile/mongo-keyfile
+    volumes:
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+    ports:
+      - 27017:27017
+      
+  mongo_config_server1:
+    image: mongo:latest
+    container_name: mongo_config_server1
+    hostname: mongo_config_server1
+    command: mongod --port 27017 --configsvr --replSet rs-config-server --keyFile /data/keyfile/mongo-keyfile
+    volumes:
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+    ports:
+      - 27020:27017
+    depends_on:
+      - mongo_config_server2
+      
+  mongo_config_server2:
+    image: mongo:latest
+    container_name: mongo_config_server2
+    hostname: mongo_config_server2
+    command: mongod --port 27017 --configsvr --replSet rs-config-server --keyFile /data/keyfile/mongo-keyfile
+    volumes:
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+    ports:
+      - 27019:27017
+      
+  mongo_primary:
+    image: mongo:latest
+    hostname: mongo_primary
+    container_name: mongo_primary
+    command: mongod --port 27017 --shardsvr --auth --replSet rs-data0 --keyFile /data/keyfile/mongo-keyfile
+    volumes:
+      - ./data/db_primary/data:/data/db
+      - ./data/db_primary/backup:/data/backup
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+      MONGO_INITDB_DATABASE: dbtest
+      MONGO_REPLICA_SET_NAME: rs-data0
+    ports:
+      - 27016:27017
+    restart: always
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+
+  mongo1:
+    image: mongo:latest
+    hostname: mongo1
+    container_name: mongo1
+    volumes:
+      - ./data/db1/data:/data/db
+      - ./data/db1/backup:/data/backup
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+    ports:
+      - 27015:27017
+    restart: always
+    command: mongod --port 27017 --shardsvr --auth --replSet rs-data0 --keyFile /data/keyfile/mongo-keyfile
+    
+
+  mongo2:
+    image: mongo:latest
+    hostname: mongo2
+    container_name: mongo2
+    volumes:
+      - ./data/db2/data:/data/db
+      - ./data/db2/backup:/data/backup
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+    ports:
+      - 27014:27017
+    restart: always
+    command: mongod --port 27017 --shardsvr --auth --replSet rs-data0 --keyFile /data/keyfile/mongo-keyfile
+
+
+  mongo3:
+    image: mongo:latest
+    hostname: mongo3
+    container_name: mongo3
+    volumes:
+      - ./data/db3/data:/data/db
+      - ./data/db3/backup:/data/backup
+      - ./mongo-keyfile:/data/keyfile/mongo-keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${PASSWORD}
+    ports:
+      - 27013:27017
+    restart: always
+    command: mongod --port 27017 --shardsvr --auth --replSet rs-data0 --keyFile /data/keyfile/mongo-keyfile
